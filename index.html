@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -174,6 +177,12 @@
     </div>
 
     <script>
+        const firebaseConfig = {
+    databaseURL: "https://console.firebase.google.com/u/1/project/scorebug-tuf/database/scorebug-tuf-default-rtdb/data/~2F"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
         let state = {
             homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0,
             homeName: "EAST BENGAL FC", awayName: "AWAY TEAM",
@@ -332,7 +341,7 @@
             state.stoppageTime = document.getElementById('stoppage-input').value;
 
             // FOR VERCEL: Switch this out with Firebase/Supabase logic
-            localStorage.setItem('scorebugState', JSON.stringify(state));
+            db.ref('live-match').set(state);
         }
 
         document.getElementById('home-name').addEventListener('input', pushState);

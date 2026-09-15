@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -155,6 +158,13 @@
     </div>
 
     <script>
+
+    const firebaseConfig = {
+    databaseURL: "https://console.firebase.google.com/u/1/project/scorebug-tuf/database/scorebug-tuf-default-rtdb/data/~2F"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
         const root = document.documentElement;
         let currentHomeScore = 0;
         let currentAwayScore = 0;
@@ -223,12 +233,13 @@
             overlay.classList.add('active');
         }
 
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'scorebugState') syncUI(JSON.parse(e.newValue));
-        });
-
-        const initialState = localStorage.getItem('scorebugState');
-        if (initialState) syncUI(JSON.parse(initialState));
+       // Listens to the cloud database and instantly updates the graphic!
+db.ref('live-match').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        syncUI(data);
+    }
+});
     </script>
 </body>
 </html>
