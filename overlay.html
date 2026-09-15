@@ -1,25 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stream Overlay</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     
+    <!-- FIREBASE SCRIPTS -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root {
-            --home-primary: #ff0000;    
-            --home-secondary: #ffcc00;  
-            --away-primary: #34c759;    
-            --away-secondary: #ffffff;  
+            --home-primary: #ed1b24;    
+            --home-secondary: #ffde00;  
+            --away-primary: #ffffff;    
+            --away-secondary: #000000;  
             --bg-blue: #08297b; 
             --text-light: #ffffff;
-            --anim-primary: #ff0000;
-            --anim-secondary: #ffcc00;
-            --anim-text: #ffffff; /* NEW: Dynamic text color variable */
+            --anim-primary: #ed1b24;
+            --anim-secondary: #ffde00;
+            --anim-text: #ffffff; 
         }
 
         body {
@@ -29,11 +30,9 @@
             overflow: hidden; letter-spacing: 1px;
         }
 
-        /* SCOREBUG WRAPPER */
         .scorebug-container {
             display: flex; height: 90px; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-            border-radius: 4px; position: relative;
-            background-color: var(--bg-blue); 
+            border-radius: 4px; position: relative; background-color: var(--bg-blue); 
         }
         
         .scorebug-container > .box:first-child { border-radius: 4px 0 0 4px; }
@@ -60,7 +59,6 @@
         .center-logo { height: 60px; width: 70px; margin: 0 10px; background: transparent; display: flex; align-items: center; justify-content: center; position: relative; }
         .logo-img { max-height: 85%; max-width: 85%; object-fit: contain; display: block; position: absolute; }
 
-        /* TIMER & STOPPAGE DROPDOWN */
         .timer-wrapper { display: flex; height: 100%; position: relative; z-index: 5; }
         .timer-section { padding: 0 25px; border-left: 2px solid rgba(255,255,255,0.2); }
         .main-timer { font-size: 80px; line-height: 90px; }
@@ -78,7 +76,6 @@
         .stoppage-added { color: white; font-size: 26px; line-height: 45px; }
         .stoppage-clock { color: #ffcc00; font-size: 30px; font-weight: bold; line-height: 45px; letter-spacing: 2px; }
 
-        /* CSS GOAL ANIMATION OVERLAY */
         .goal-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-color: var(--bg-blue); z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; opacity: 0; pointer-events: none;
@@ -90,7 +87,6 @@
         .anim-logo { z-index: 2; height: 75px; width: 75px; object-fit: contain; opacity: 0; }
         .anim-text-container { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; text-align: center; width: 100%; }
         
-        /* NEW: Text elements now use var(--anim-text) */
         .anim-text-goal, .anim-text-team { 
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             font-size: 85px; color: var(--anim-text); white-space: nowrap; letter-spacing: 3px; opacity: 0; 
@@ -158,12 +154,30 @@
     </div>
 
     <script>
+        // --- FIREBASE SETUP ---
+       // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-    const firebaseConfig = {
-    databaseURL: "https://console.firebase.google.com/u/1/project/scorebug-tuf/database/scorebug-tuf-default-rtdb/data/~2F"
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBBmR1kRwEtyuMtzTfZq7QcxWD2xJKqIOM",
+  authDomain: "scorebug-tuf.firebaseapp.com",
+  databaseURL: "https://scorebug-tuf-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "scorebug-tuf",
+  storageBucket: "scorebug-tuf.firebasestorage.app",
+  messagingSenderId: "1041781952962",
+  appId: "1:1041781952962:web:862a0b2752ee2dd81bc65b",
+  measurementId: "G-GKTYVVTEBV"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+        // ----------------------
 
         const root = document.documentElement;
         let currentHomeScore = 0;
@@ -216,14 +230,14 @@ const db = firebase.database();
             if (team === 'home') {
                 root.style.setProperty('--anim-primary', data.homePri);
                 root.style.setProperty('--anim-secondary', data.homeSec);
-                root.style.setProperty('--anim-text', data.homeText || '#ffffff'); // Injecting dynamic text color
+                root.style.setProperty('--anim-text', data.homeText || '#ffffff'); 
                 document.getElementById('anim-team-name').innerText = data.homeName;
                 document.getElementById('anim-logo-left').src = data.homeLogo;
                 document.getElementById('anim-logo-right').src = data.homeLogo;
             } else {
                 root.style.setProperty('--anim-primary', data.awayPri);
                 root.style.setProperty('--anim-secondary', data.awaySec);
-                root.style.setProperty('--anim-text', data.awayText || '#ffffff'); // Injecting dynamic text color
+                root.style.setProperty('--anim-text', data.awayText || '#ffffff'); 
                 document.getElementById('anim-team-name').innerText = data.awayName;
                 document.getElementById('anim-logo-left').src = data.awayLogo;
                 document.getElementById('anim-logo-right').src = data.awayLogo;
@@ -233,13 +247,13 @@ const db = firebase.database();
             overlay.classList.add('active');
         }
 
-       // Listens to the cloud database and instantly updates the graphic!
-db.ref('live-match').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        syncUI(data);
-    }
-});
+        // --- FIREBASE LISTENER ---
+        db.ref('live-match').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                syncUI(data);
+            }
+        });
     </script>
 </body>
 </html>
