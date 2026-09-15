@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --home-primary: #ff0000;    
+            --home-secondary: #ffcc00;  
+            --away-primary: #34c759;    
+            --away-secondary: #ffffff;  
+            --bg-blue: #08297b; 
+            --text-light: #ffffff;
+            --anim-primary: #ff0000;
+            --anim-secondary: #ffcc00;
+            --anim-text: #ffffff; /* NEW: Dynamic text color variable */
+        }
+
+        body {
+            margin: 0; padding: 0; background-color: transparent; 
+            font-family: 'Bebas Neue', sans-serif;
+            display: flex; justify-content: center; padding-top: 40px; 
+            overflow: hidden; letter-spacing: 1px;
+        }
+
+        /* SCOREBUG WRAPPER */
+        .scorebug-container {
+            display: flex; height: 90px; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            border-radius: 4px; position: relative;
+            background-color: var(--bg-blue); 
+        }
+        
+        .scorebug-container > .box:first-child { border-radius: 4px 0 0 4px; }
+        .scorebug-container > .box:last-child { border-radius: 0 4px 4px 0; }
+
+        .box { display: flex; align-items: center; justify-content: center; height: 100%; position: relative; }
+        .white-box { background-color: white; color: #333; text-align: center; font-size: 18px; padding: 0 15px; width: 110px; line-height: 1.1; z-index: 10; }
+        .blue-box { background-color: var(--bg-blue); color: var(--text-light); }
+        
+        .color-bar { width: 12px; height: 100%; display: flex; flex-direction: column; z-index: 10; }
+        .color-bar .primary, .color-bar .secondary { height: 50%; width: 100%; }
+        .home-colors .primary { background-color: var(--home-primary); }
+        .home-colors .secondary { background-color: var(--home-secondary); }
+        .away-colors .primary { background-color: var(--away-primary); }
+        .away-colors .secondary { background-color: var(--away-secondary); }
+
+        .score-section { padding: 0 20px; font-size: 80px; display: flex; align-items: center; z-index: 10; }
+        .score-wrapper { display: flex; flex-direction: column; align-items: center; margin: 0 10px; }
+        .score { width: 50px; text-align: center; line-height: 70px; }
+
+        .red-cards { display: flex; gap: 2px; height: 10px; margin-top: -5px; }
+        .red-card { width: 8px; height: 12px; background-color: #ff3b30; border-radius: 1px; display: none; border: 1px solid #fff; }
+
+        .center-logo { height: 60px; width: 70px; margin: 0 10px; background: transparent; display: flex; align-items: center; justify-content: center; position: relative; }
+        .logo-img { max-height: 85%; max-width: 85%; object-fit: contain; display: block; position: absolute; }
+
+        /* TIMER & STOPPAGE DROPDOWN */
+        .timer-wrapper { display: flex; height: 100%; position: relative; z-index: 5; }
+        .timer-section { padding: 0 25px; border-left: 2px solid rgba(255,255,255,0.2); }
+        .main-timer { font-size: 80px; line-height: 90px; }
+        
+        .stoppage-dropdown {
+            position: absolute; top: 0; left: 0; width: 100%; height: 45px;
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; border-radius: 0 0 6px 6px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            z-index: -1; opacity: 0; pointer-events: none;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s;
+            transform: translateY(0); box-sizing: border-box;
+        }
+        .stoppage-dropdown.show { transform: translateY(90px); opacity: 1; }
+        .stoppage-added { color: white; font-size: 26px; line-height: 45px; }
+        .stoppage-clock { color: #ffcc00; font-size: 30px; font-weight: bold; line-height: 45px; letter-spacing: 2px; }
+
+        /* CSS GOAL ANIMATION OVERLAY */
+        .goal-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg-blue); z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; opacity: 0; pointer-events: none;
+            border-radius: 4px; overflow: hidden; 
+        }
+        .goal-bg-wipe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--anim-primary) 0%, var(--anim-primary) 50%, var(--anim-secondary) 50%, var(--anim-secondary) 100%); transform: translateX(-100%); z-index: 1;
+        }
+        .anim-logo { z-index: 2; height: 75px; width: 75px; object-fit: contain; opacity: 0; }
+        .anim-text-container { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; text-align: center; width: 100%; }
+        
+        /* NEW: Text elements now use var(--anim-text) */
+        .anim-text-goal, .anim-text-team { 
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
+            font-size: 85px; color: var(--anim-text); white-space: nowrap; letter-spacing: 3px; opacity: 0; 
+        }
+
+        .goal-overlay.active { animation: masterOverlay 5.5s forwards; }
+        .goal-overlay.active .goal-bg-wipe { animation: wipeColors 5.5s forwards; }
+        .goal-overlay.active .anim-logo { animation: popLogos 5.5s forwards; }
+        .goal-overlay.active .anim-text-goal { animation: textGoal 5.5s forwards; }
+        .goal-overlay.active .anim-text-team { animation: textTeam 5.5s forwards; }
+
+        @keyframes masterOverlay { 0%, 5% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes wipeColors { 0%, 20% { transform: translateX(-100%); } 28%, 100% { transform: translateX(0); } }
+        @keyframes popLogos { 0%, 23% { opacity: 0; transform: scale(0.5); } 28%, 100% { opacity: 1; transform: scale(1); } }
+        @keyframes textGoal { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 5% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 45% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } 50%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); } }
+        @keyframes textTeam { 0%, 48% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); } 52%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="scorebug-container" id="scorebug">
+        <div class="box white-box"><img id="home-logo-img" class="logo-img" src=""></div>
+        <div class="color-bar home-colors"><div class="primary"></div><div class="secondary"></div></div>
+
+        <div class="box blue-box score-section">
+            <div class="score-wrapper">
+                <div class="score" id="home-score">0</div>
+                <div class="red-cards" id="home-reds">
+                    <div class="red-card"></div><div class="red-card"></div><div class="red-card"></div><div class="red-card"></div><div class="red-card"></div>
+                </div>
+            </div>
+            <div class="center-logo"><img id="yt-logo-img" class="logo-img" src=""></div>
+            <div class="score-wrapper">
+                <div class="score" id="away-score">0</div>
+                <div class="red-cards" id="away-reds">
+                    <div class="red-card"></div><div class="red-card"></div><div class="red-card"></div><div class="red-card"></div><div class="red-card"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="color-bar away-colors"><div class="primary"></div><div class="secondary"></div></div>
+        <div class="box white-box"><img id="away-logo-img" class="logo-img" src=""></div>
+        
+        <div class="timer-wrapper">
+            <div class="box blue-box timer-section">
+                <span class="main-timer" id="timer">00:00</span>
+            </div>
+            
+            <div class="stoppage-dropdown" id="stoppage-dropdown">
+                <span class="stoppage-added" id="stoppage-added">+3</span>
+                <span class="stoppage-clock" id="stoppage-clock">00:00</span>
+            </div>
+        </div>
+        
+        <div class="box white-box" style="width: 140px;"><img id="tourney-logo-img" class="logo-img" src=""></div>
+
+        <div class="goal-overlay" id="goal-overlay">
+            <div class="goal-bg-wipe"></div>
+            <img class="anim-logo" id="anim-logo-left" src="">
+            <div class="anim-text-container">
+                <div class="anim-text-goal">GOAL!!!</div>
+                <div class="anim-text-team" id="anim-team-name">TEAM NAME</div>
+            </div>
+            <img class="anim-logo" id="anim-logo-right" src="">
+        </div>
+    </div>
+
+    <script>
+        const root = document.documentElement;
+        let currentHomeScore = 0;
+        let currentAwayScore = 0;
+
+        function syncUI(data) {
+            if (!data) return;
+
+            if (data.homeScore > currentHomeScore) triggerGoalAnimation('home', data);
+            if (data.awayScore > currentAwayScore) triggerGoalAnimation('away', data);
+            currentHomeScore = data.homeScore;
+            currentAwayScore = data.awayScore;
+
+            document.getElementById('home-score').innerText = data.homeScore;
+            document.getElementById('away-score').innerText = data.awayScore;
+            document.getElementById('timer').innerText = data.timerText;
+            
+            const dropdown = document.getElementById('stoppage-dropdown');
+            document.getElementById('stoppage-added').innerText = "+" + data.stoppageTime;
+            document.getElementById('stoppage-clock').innerText = data.stoppageClock;
+            if (data.showStoppage) {
+                dropdown.classList.add('show');
+            } else {
+                dropdown.classList.remove('show');
+            }
+
+            updateRedCards('home', data.homeReds);
+            updateRedCards('away', data.awayReds);
+
+            root.style.setProperty('--home-primary', data.homePri);
+            root.style.setProperty('--home-secondary', data.homeSec);
+            root.style.setProperty('--away-primary', data.awayPri);
+            root.style.setProperty('--away-secondary', data.awaySec);
+
+            if (data.homeLogo) document.getElementById('home-logo-img').src = data.homeLogo;
+            if (data.awayLogo) document.getElementById('away-logo-img').src = data.awayLogo;
+            if (data.ytLogo) document.getElementById('yt-logo-img').src = data.ytLogo;
+            if (data.tourneyLogo) document.getElementById('tourney-logo-img').src = data.tourneyLogo;
+        }
+
+        function updateRedCards(team, count) {
+            const cards = document.querySelectorAll(`#${team}-reds .red-card`);
+            cards.forEach((card, index) => {
+                card.style.display = index < count ? 'block' : 'none';
+            });
+        }
+
+        function triggerGoalAnimation(team, data) {
+            const overlay = document.getElementById('goal-overlay');
+            if (team === 'home') {
+                root.style.setProperty('--anim-primary', data.homePri);
+                root.style.setProperty('--anim-secondary', data.homeSec);
+                root.style.setProperty('--anim-text', data.homeText || '#ffffff'); // Injecting dynamic text color
+                document.getElementById('anim-team-name').innerText = data.homeName;
+                document.getElementById('anim-logo-left').src = data.homeLogo;
+                document.getElementById('anim-logo-right').src = data.homeLogo;
+            } else {
+                root.style.setProperty('--anim-primary', data.awayPri);
+                root.style.setProperty('--anim-secondary', data.awaySec);
+                root.style.setProperty('--anim-text', data.awayText || '#ffffff'); // Injecting dynamic text color
+                document.getElementById('anim-team-name').innerText = data.awayName;
+                document.getElementById('anim-logo-left').src = data.awayLogo;
+                document.getElementById('anim-logo-right').src = data.awayLogo;
+            }
+            overlay.classList.remove('active');
+            void overlay.offsetWidth; 
+            overlay.classList.add('active');
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'scorebugState') syncUI(JSON.parse(e.newValue));
+        });
+
+        const initialState = localStorage.getItem('scorebugState');
+        if (initialState) syncUI(JSON.parse(initialState));
+    </script>
+</body>
+</html>
