@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scorebug Dashboard</title>
-    
-    <!-- FIREBASE SCRIPTS -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: white; padding: 30px; display: flex; flex-direction: column; align-items: center; }
         .dashboard { background: #2a2a2a; padding: 30px; border-radius: 12px; width: 100%; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -51,7 +46,7 @@
 
         <div style="text-align: center; margin-bottom: 20px;">
             <button onclick="window.open('overlay.html', '_blank')" style="background: #007aff; font-size: 16px; padding: 10px 20px; border-radius: 8px;">
-                📺 Open Overlay (Get Link)
+                📺 Open Overlay Tab
             </button>
         </div>
 
@@ -175,34 +170,9 @@
     </div>
 
     <script>
-        // --- FIREBASE SETUP ---
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBBmR1kRwEtyuMtzTfZq7QcxWD2xJKqIOM",
-  authDomain: "scorebug-tuf.firebaseapp.com",
-  databaseURL: "https://scorebug-tuf-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "scorebug-tuf",
-  storageBucket: "scorebug-tuf.firebasestorage.app",
-  messagingSenderId: "1041781952962",
-  appId: "1:1041781952962:web:862a0b2752ee2dd81bc65b",
-  measurementId: "G-GKTYVVTEBV"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-        // ----------------------
-
         let state = {
             homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0,
-            homeName: "Home", awayName: "Away",
+            homeName: "EAST BENGAL FC", awayName: "REAL MADRID",
             homePri: "#ed1b24", homeSec: "#ffde00", homeText: "#ffffff",
             awayPri: "#ffffff", awaySec: "#000000", awayText: "#000000",
             homeLogo: "", awayLogo: "", ytLogo: "", tourneyLogo: "",
@@ -333,12 +303,6 @@ const analytics = getAnalytics(app);
         function encodeImage(input, key) {
             const file = input.files[0];
             if (file) {
-                // Ensure uploaded images aren't massive since Firebase has size limits
-                if (file.size > 2000000) {
-                    alert("Image is too large! Please upload logos smaller than 2MB.");
-                    input.value = "";
-                    return;
-                }
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     state[key] = e.target.result;
@@ -362,8 +326,8 @@ const analytics = getAnalytics(app);
             
             state.stoppageTime = document.getElementById('stoppage-input').value;
 
-            // --- FIREBASE PUSH ---
-            db.ref('live-match').set(state);
+            // Uses local browser storage to instantly sync with OBS
+            localStorage.setItem('scorebugState', JSON.stringify(state));
         }
 
         document.getElementById('home-name').addEventListener('input', pushState);

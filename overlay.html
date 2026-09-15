@@ -6,10 +6,6 @@
     <title>Stream Overlay</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     
-    <!-- FIREBASE SCRIPTS -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
         :root {
             --home-primary: #ed1b24;    
@@ -154,31 +150,6 @@
     </div>
 
     <script>
-        // --- FIREBASE SETUP ---
-       // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBBmR1kRwEtyuMtzTfZq7QcxWD2xJKqIOM",
-  authDomain: "scorebug-tuf.firebaseapp.com",
-  databaseURL: "https://scorebug-tuf-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "scorebug-tuf",
-  storageBucket: "scorebug-tuf.firebasestorage.app",
-  messagingSenderId: "1041781952962",
-  appId: "1:1041781952962:web:862a0b2752ee2dd81bc65b",
-  measurementId: "G-GKTYVVTEBV"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-        // ----------------------
-
         const root = document.documentElement;
         let currentHomeScore = 0;
         let currentAwayScore = 0;
@@ -247,13 +218,13 @@ const analytics = getAnalytics(app);
             overlay.classList.add('active');
         }
 
-        // --- FIREBASE LISTENER ---
-        db.ref('live-match').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                syncUI(data);
-            }
+        // Local Storage Sync (Works instantly when Dashboard is open as an OBS Custom Dock)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'scorebugState') syncUI(JSON.parse(e.newValue));
         });
+
+        const initialState = localStorage.getItem('scorebugState');
+        if (initialState) syncUI(JSON.parse(initialState));
     </script>
 </body>
 </html>
